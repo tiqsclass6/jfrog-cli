@@ -26,8 +26,5 @@ terraform.rc
 # Terraform lock file
 *.lock.hcl
 
-# Block any other worldwide configuration docuents
-*.json
-*.pem
-*.pub
-*.ppk
+# Terraform folder
+.terraform\
