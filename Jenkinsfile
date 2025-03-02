@@ -25,7 +25,7 @@ pipeline {
 
     environment {
         TF_VERSION = "1.11.0"  // Set your Terraform version
-        AWS_CREDENTIALS_ID = "jfrog_cli1"  // Update with your Jenkins credentials ID if using AWS
+        AWS_CREDENTIALS_ID = "Jenkins3"  // Update with your Jenkins credentials ID if using AWS
     }
 
     stages {
@@ -51,9 +51,13 @@ pipeline {
 
         stage('Terraform Init') {
             steps {
-                sh 'terraform init'
+                withCredentials([string(credentialsId: 'Jenkins3', variable: 'AWS_ACCESS_KEY_ID'),
+                                string(credentialsId: 'Jenkins3', variable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh 'terraform init'
+                }
             }
         }
+
 
         stage('Terraform Validate') {
             steps {
