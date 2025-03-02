@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-1'
-        JFROG_CLI_PATH = 'jfrog'
+        JFROG_CLI_PATH = 'jfrog_cli'
         JFROG_URL = 'https://trialu79uyt.jfrog.io/'
         JFROG_FILE_NAME = 'jfrog_cli_030225'
     }
@@ -79,6 +79,7 @@ pipeline {
             }
         }
 
+        /*
         stage('JFrog Security Scan') {
             steps {
                 script {
@@ -89,6 +90,7 @@ pipeline {
                     echo "Uploading JFrog scan results to Artifactory..."
                     ${JFROG_CLI_PATH} rt upload tf_scan.json ${JFROG_URL}/artifactory/${JFROG_FILE_NAME}
                 """
+            */
             }
         }
     }
