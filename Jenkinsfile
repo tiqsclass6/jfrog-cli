@@ -24,44 +24,20 @@ pipeline {
     agent any
 
     environment {
-        TF_VERSION = "1.11.0"  // Set your Terraform version
-        AWS_CREDENTIALS_ID = "Jenkins3"  // Update with your Jenkins credentials ID if using AWS
+        TF_WORKING_DIR = "${WORKSPACE}/terraform"  // Adjust if Terraform files are in a subdirectory
     }
 
     stages {
-        stage('Checkout Code') {
+        stage('Checkout Repository') {
             steps {
                 git url: 'https://github.com/tiqsclass6/jfrog-cli.git', branch: 'main'
             }
         }
 
-        stage('Install Terraform') {
+        stage('Setup Terraform') {
             steps {
-                sh '''
-                if ! terraform version | grep -q "$TF_VERSION"; then
-                    echo "Installing Terraform..."
-                    wget https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip
-                    unzip terraform_${TF_VERSION}_linux_amd64.zip
-                    sudo mv terraform /usr/local/bin/
-                fi
-                terraform --version
-                '''
-            }
-        }
-
-        stage('Terraform Init') {
-            steps {
-                withCredentials([string(credentialsId: 'Jenkins3', variable: 'AWS_ACCESS_KEY_ID'),
-                                string(credentialsId: 'Jenkins3', variable: 'AWS_SECRET_ACCESS_KEY')]) {
-                    sh 'terraform init'
-                }
-            }
-        }
-
-
-        stage('Terraform Validate') {
-            steps {
-                sh 'terraform validate'
+                sh 'terraform version'  // Confirm Terraform is installed
+                sh 'terraform init'     // Initialize Terraform in the working directory
             }
         }
 
@@ -73,16 +49,18 @@ pipeline {
 
         stage('Terraform Apply') {
             steps {
-                input message: "Do you want to apply the Terraform changes?", ok: "Yes"
+                input message: "Do you want to apply Terraform changes?", ok: "Apply"
                 sh 'terraform apply -auto-approve tfplan'
             }
         }
     }
 
     post {
-        always {
-            archiveArtifacts artifacts: 'tfplan', fingerprint: true
-            cleanWs()
+        success {
+            echo 'Terraform applied successfully!'
+        }
+        failure {
+            echo 'Terraform failed. Check the logs.'
         }
     }
 }
