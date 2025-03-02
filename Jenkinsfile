@@ -78,21 +78,6 @@ pipeline {
                 }
             }
         }
-
-        /*
-        stage('JFrog Security Scan') {
-            steps {
-                script {
-                sh "which jfrog" // Debugging step to verify JFrog CLI location
-                sh "jfrog --version" // Check if JFrog CLI is accessible
-                sh "${JFROG_CLI_PATH} rt scan --fail --spec tf_scan.json"
-                sh """
-                    echo "Uploading JFrog scan results to Artifactory..."
-                    ${JFROG_CLI_PATH} rt upload tf_scan.json ${JFROG_URL}/artifactory/${JFROG_FILE_NAME}
-                """
-            */
-            }
-        }
     }
 
 
@@ -124,3 +109,18 @@ pipeline {
         }
     }
 }
+
+    /*
+        stage('JFrog Security Scan') {
+            steps {
+                script {
+                sh "which jfrog" // Debugging step to verify JFrog CLI location
+                sh "jfrog --version" // Check if JFrog CLI is accessible
+                sh "${JFROG_CLI_PATH} rt scan --fail --spec tf_scan.json"
+                sh """
+                    echo "Uploading JFrog scan results to Artifactory..."
+                    ${JFROG_CLI_PATH} rt upload tf_scan.json ${JFROG_URL}/artifactory/${JFROG_FILE_NAME}
+                """
+            }
+        }
+        */
