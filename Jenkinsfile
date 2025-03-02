@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-1'
-        JFROG_CLI_PATH = 'jfrog_cli'
+        JFROG_CLI_PATH = 'jfrog'  // Use system-wide JFrog CLI
         JFROG_URL = 'https://trialu79uyt.jfrog.io/'
         JFROG_FILE_NAME = 'jfrog_cli_030225'
     }
@@ -78,8 +78,20 @@ pipeline {
                 }
             }
         }
-    }
 
+        stage('JFrog Security Scan') {
+            steps {
+                script {
+                    sh "which jfrog" // Debugging step to verify JFrog CLI location
+                    sh "jfrog --version" // Check if JFrog CLI is accessible
+                    sh "${JFROG_CLI_PATH} rt scan --fail --spec tf_scan.json"
+                    sh """
+                        echo "Uploading JFrog scan results to Artifactory..."
+                        ${JFROG_CLI_PATH} rt upload tf_scan.json ${JFROG_URL}/artifactory/${JFROG_FILE_NAME}
+                    """
+                }
+            }
+        }
 
         stage('Terraform Destroy') {
             steps {
@@ -109,18 +121,3 @@ pipeline {
         }
     }
 }
-
-    /*
-        stage('JFrog Security Scan') {
-            steps {
-                script {
-                sh "which jfrog" // Debugging step to verify JFrog CLI location
-                sh "jfrog --version" // Check if JFrog CLI is accessible
-                sh "${JFROG_CLI_PATH} rt scan --fail --spec tf_scan.json"
-                sh """
-                    echo "Uploading JFrog scan results to Artifactory..."
-                    ${JFROG_CLI_PATH} rt upload tf_scan.json ${JFROG_URL}/artifactory/${JFROG_FILE_NAME}
-                """
-            }
-        }
-        */
