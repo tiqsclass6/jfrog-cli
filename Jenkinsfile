@@ -8,25 +8,23 @@ pipeline {
     }
 
     stages {
-        stage ('Clone') {
+        stage ('Clone Repository') {
             steps {
-                git branch: 'main', url: "https://github.com/tiqsclass6/jfrog-cli"
+                git branch: 'main', credentialsId: 'github-cred', url: "https://github.com/tiqsclass6/jfrog-cli"
             }
         }
 
-        stage ('Artifactory Configuration') {
+        stage ('Configure JFrog Artifactory') {
             steps {
-                withCredentials([string(credentialsId: JFROG_CLI_CREDENTIALS_ID, variable: 'JFROG_CLI_TOKEN')]) {
-                    rtServer (
-                        id: "artifactory-server-id", 
-                        url: "https://trialu79uyt.jfrog.io/artifactory",
-                        credentialsId: JFROG_ADMIN_CREDENTIALS_ID
-                    )
+                withCredentials([string(credentialsId: JFROG_ADMIN_CREDENTIALS_ID, variable: 'JFROG_CLI_TOKEN')]) {
+                    sh """
+                        jfrog config add artifactory-server --artifactory-url=https://trialu79uyt.jfrog.io/artifactory --user=admin --password=$JFROG_CLI_TOKEN --interactive=false
+                    """
                 }
             }
         }
 
-        stage ('Scan GitHub Repository') {
+        stage ('Scan GitHub Repository for Vulnerabilities') {
             steps {
                 script {
                     sh """
@@ -111,18 +109,18 @@ pipeline {
             }
         }
 
-        stage ('Deploy') {
+        stage ('Deploy Application') {
             steps {
                 echo 'Deploying application...'
             }
         }
 
-        stage ('Publish Build Info') {
+        stage ('Publish Build Info to JFrog') {
             steps {
                 withCredentials([string(credentialsId: JFROG_CLI_CREDENTIALS_ID, variable: 'JFROG_CLI_TOKEN')]) {
-                    rtPublishBuildInfo (
-                        serverId: "helmRepoResource"
-                    )
+                    sh """
+                        jfrog rt build-publish artifactory-server
+                    """
                 }
             }
         }
