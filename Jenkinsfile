@@ -131,24 +131,7 @@ pipeline {
     post {
         failure {
             script {
-                echo "Build failed! Sending email notification..."
-                emailext (
-                    subject: "Jenkins Pipeline Failure: Terraform Error",
-                    body: """
-                    Jenkins Pipeline Execution Failed 🚨
-
-                    Job Name: ${env.JOB_NAME}
-                    Build Number: ${env.BUILD_NUMBER}
-                    Build URL: ${env.BUILD_URL}
-
-                    One of the Terraform steps (Plan, Apply, or Destroy) encountered an error. 
-                    Please check the Jenkins logs for further details.
-
-                    Regards,
-                    Jenkins CI/CD System
-                    """,
-                    to: "daquietstorm22@gmail.com"
-                )
+                echo "Build failed! Check Jenkins logs for details."
             }
         }
         always {
