@@ -10,14 +10,14 @@ pipeline {
 
     stages {
 
-        // Clone GitHub Repository
+        // ✅ Clone GitHub Repository
         stage ('Clone Repository') {
             steps {
                 git branch: 'main', credentialsId: 'github-cred', url: "https://github.com/tiqsclass6/jfrog-cli"
             }
         }
 
-        // Install JFrog CLI (User-Level)
+        // ✅ Install JFrog CLI (User-Level)
         stage ('Install JFrog CLI') {
             steps {
                 sh """
@@ -31,22 +31,22 @@ pipeline {
             }
         }
 
-        // Configure JFrog Artifactory
+        // ✅ Configure JFrog Artifactory
         stage ('Configure JFrog Artifactory') {
             steps {
                 withCredentials([usernamePassword(credentialsId: JFROG_ADMIN_CREDENTIALS_ID, 
                                                  usernameVariable: 'JFROG_USER', 
                                                  passwordVariable: 'JFROG_PASSWORD')]) {
                     sh '''
-                    echo $JFROG_PASSWORD | $HOME/.local/bin/jfrog config add artifactory-server \
+                    $HOME/.local/bin/jfrog config add artifactory-server \
                         --artifactory-url=https://trialu79uyt.jfrog.io/artifactory \
-                        --user=$JFROG_USER --password-stdin --interactive=false
+                        --user=$JFROG_USER --password=$JFROG_PASSWORD --interactive=false
                     '''
                 }
             }
         }
 
-        // Security Scan on GitHub Repo
+        // ✅ Security Scan on GitHub Repo
         stage ('Scan GitHub Repository') {
             steps {
                 sh """
@@ -56,28 +56,28 @@ pipeline {
             }
         }
 
-        // Terraform Initialization
+        // ✅ Terraform Initialization
         stage ('Terraform Init') {
             steps {
                 sh "terraform init"
             }
         }
 
-        // Terraform Format Check
+        // ✅ Terraform Format Check
         stage ('Terraform Format Check') {
             steps {
                 sh "terraform fmt -check"
             }
         }
 
-        // Terraform Validation
+        // ✅ Terraform Validation
         stage ('Terraform Validate') {
             steps {
                 sh "terraform validate"
             }
         }
 
-        // Terraform Plan
+        // ✅ Terraform Plan
         stage ('Terraform Plan') {
             steps {
                 withCredentials([aws(credentialsId: AWS_CREDENTIALS_ID, 
@@ -92,7 +92,7 @@ pipeline {
             }
         }
 
-        // Terraform Apply (User Confirmation Required)
+        // ✅ Terraform Apply (User Confirmation Required)
         stage ('Apply Terraform') {
             steps {
                 input message: "Approve Terraform Apply?", ok: "Deploy"
@@ -108,7 +108,7 @@ pipeline {
             }
         }
 
-        // Terraform Destroy (User Confirmation Required)
+        // ✅ Terraform Destroy (User Confirmation Required)
         stage ('Destroy Terraform') {
             steps {
                 input message: "Do you want to destroy the Terraform resources?", ok: "Destroy"
@@ -124,14 +124,14 @@ pipeline {
             }
         }
 
-        // Deploy Application
+        // ✅ Deploy Application
         stage ('Deploy Application') {
             steps {
                 echo 'Deploying application...'
             }
         }
 
-        // Publish Build Info to JFrog Artifactory
+        // ✅ Publish Build Info to JFrog Artifactory
         stage ('Publish Build Info') {
             steps {
                 withCredentials([string(credentialsId: JFROG_CLI_CREDENTIALS_ID, 
