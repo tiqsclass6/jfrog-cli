@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         JFROG_CLI_CREDENTIALS_ID = 'jfrog_cli'  // Jenkins credential ID for JFrog CLI
-        JFROG_ADMIN_CREDENTIALS_ID = 'jfrog_cli1'  // JFrog admin credentials
+        JFROG_ADMIN_CREDENTIALS_ID = 'jfrog_cli1'  // JFrog admin credentials (Username & Password)
         AWS_CREDENTIALS_ID = 'jfrog-jenkins'  // Jenkins AWS credential ID
     }
 
@@ -16,9 +16,9 @@ pipeline {
 
         stage ('Configure JFrog Artifactory') {
             steps {
-                withCredentials([string(credentialsId: JFROG_ADMIN_CREDENTIALS_ID, variable: 'JFROG_CLI_TOKEN')]) {
+                withCredentials([usernamePassword(credentialsId: JFROG_ADMIN_CREDENTIALS_ID, usernameVariable: 'JFROG_USER', passwordVariable: 'JFROG_PASSWORD')]) {
                     sh """
-                        jfrog config add artifactory-server --artifactory-url=https://trialu79uyt.jfrog.io/artifactory --user=admin --password=$JFROG_CLI_TOKEN --interactive=false
+                        jfrog config add artifactory-server --artifactory-url=https://trialu79uyt.jfrog.io/artifactory --user=$JFROG_USER --password=$JFROG_PASSWORD --interactive=false
                     """
                 }
             }
