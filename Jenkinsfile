@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage ('Clone') {
             steps {
-                git branch: 'master', url: "https://github.com/tiqsclass6/jfrog-cli"
+                git branch: 'main', url: "https://github.com/tiqsclass6/jfrog-cli"
             }
         }
 
