@@ -6,6 +6,7 @@ pipeline {
         JFROG_ADMIN_CREDENTIALS_ID = 'jfrog_cli1'
         AWS_CREDENTIALS_ID = 'jfrog-jenkins'
         JFROG_CLI_PATH = "$HOME/.local/bin/jfrog"
+        JFROG_SERVER_ID = "artifactory-server" // Define the JFrog Server ID
     }
 
     stages {
@@ -35,9 +36,17 @@ pipeline {
                                                  usernameVariable: 'JFROG_USER', 
                                                  passwordVariable: 'JFROG_PASSWORD')]) {
                     sh '''
-                    $HOME/.local/bin/jfrog config add artifactory-server \
-                        --artifactory-url=https://trialu79uyt.jfrog.io/artifactory \
-                        --user=$JFROG_USER --password=$JFROG_PASSWORD --interactive=false
+                    if $HOME/.local/bin/jfrog config show $JENKINS_SERVER_ID > /dev/null 2>&1; then
+                        echo "Updating existing JFrog configuration..."
+                        $HOME/.local/bin/jfrog config edit $JENKINS_SERVER_ID \
+                            --artifactory-url=https://trialu79uyt.jfrog.io/artifactory \
+                            --user=$JFROG_USER --password=$JFROG_PASSWORD
+                    else
+                        echo "Adding new JFrog configuration..."
+                        $HOME/.local/bin/jfrog config add $JENKINS_SERVER_ID \
+                            --artifactory-url=https://trialu79uyt.jfrog.io/artifactory \
+                            --user=$JFROG_USER --password=$JFROG_PASSWORD --interactive=false
+                    fi
                     '''
                 }
             }
