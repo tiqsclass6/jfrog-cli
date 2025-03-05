@@ -40,7 +40,7 @@ pipeline {
                         echo "Updating existing JFrog configuration..."
                         $HOME/.local/bin/jfrog config edit $JENKINS_SERVER_ID \
                             --artifactory-url=https://trialu79uyt.jfrog.io/artifactory \
-                            --user=$JFROG_USER --password=$JFROG_PASSWORD
+                            --user=$JFROG_USER --password=$JFROG_PASSWORD --interactive=false
                     else
                         echo "Adding new JFrog configuration..."
                         $HOME/.local/bin/jfrog config add $JENKINS_SERVER_ID \
