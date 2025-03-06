@@ -1,3 +1,15 @@
+pipelines: 
+  - name: jenkinsPipeline
+    steps:
+      - name: jenkinsStep
+        type: Jenkins
+        configuration: 
+                  timeoutSeconds: 30 # uses Bash tag to set time limit, in seconds, for the step to complete
+          jenkinsJobName: myJenkinsJob
+          integrations:
+            - name: jenkins_integration
+
+/*
 pipeline {
     agent any
 
@@ -17,7 +29,7 @@ pipeline {
                 script {
                     echo "Checking out source code from GitHub..."
                     checkout([$class: 'GitSCM',
-                        branches: [[name: '*/main']],
+                        branches: [[name: '/ *main']],
                         userRemoteConfigs: [[url: 'https://github.com/tiqsclass6/jfrog-cli']]
                     ])
                     echo "Code checkout successful."
@@ -102,7 +114,6 @@ pipeline {
                 }
             }
         }
-
 
         stage ('Terraform Init') {
             steps {
@@ -193,3 +204,4 @@ pipeline {
         }
     }
 }
+*/
