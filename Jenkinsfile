@@ -4,10 +4,10 @@ pipeline {
     environment {
         JFROG_CLI_CREDENTIALS_ID = 'jfrog_cli'
         JFROG_ADMIN_CREDENTIALS_ID = 'jfrog_cli1'
-        AWS_CREDENTIALS_ID = 'jfrog-jenkins'
-        JFROG_CLI_PATH = "https://trialu79uyt.jfrog.io/artifactory/jfrog_cli/"
-        JFROG_BUILD_NAME = "jfrog_jenkins_March2025"
-        JFROG_REPO = "jfrog_cli"
+        AWS_REGION = 'us-east-1'
+        JFROG_CLI_PATH = '$HOME/.local/bin/jfrog'
+        JFROG_BUILD_NAME = '05-03-25_Jenkins'  
+        JFROG_REPO = 'jfrog_cli'
     }
 
     stages {
@@ -73,33 +73,36 @@ pipeline {
             steps {
                 withCredentials([string(credentialsId: JFROG_CLI_CREDENTIALS_ID, 
                                         variable: 'JFROG_CLI_TOKEN')]) {
-                    sh """
-                        echo "Publishing build info to JFrog Artifactory..."
-                        export PATH=$HOME/.local/bin:$PATH
+                    script {
+                        def buildName = "jfrog_jenkins_" + new Date().format('ddMMyy')
 
-                        # Define build name and number
-                        BUILD_NAME="jfrog_jenkins_March2025"
-                        BUILD_NUMBER="$BUILD_NUMBER"
+                        sh """
+                            echo "Publishing build info to JFrog Artifactory..."
+                            export PATH=$HOME/.local/bin:$PATH
 
-                        # Ensure build number is not empty
-                        if [ -z "$BUILD_NUMBER" ]; then
-                            BUILD_NUMBER=1  # Default to 1 if empty
-                        fi
+                            echo "Build Name: $buildName"
+                            echo "Build Number: $BUILD_NUMBER"
 
-                        echo "Build Name: $BUILD_NAME"
-                        echo "Build Number: $BUILD_NUMBER"
+                            # Add Git metadata to the build
+                            $JFROG_CLI_PATH rt build-add-git "$buildName" "$BUILD_NUMBER"
 
-                        # Add Git metadata to the build
-                        $HOME/.local/bin/jfrog rt build-add-git "$BUILD_NAME" "$BUILD_NUMBER"
+                            # Publish the build info to JFrog CLI repo
+                            $JFROG_CLI_PATH rt build-publish --server-id=artifactory-server --repo=$JFROG_REPO "$buildName" "$BUILD_NUMBER"
 
-                        # Publish the build info
-                        $HOME/.local/bin/jfrog rt build-publish --server-id=artifactory-server --repo=$JFROG_REPO "$BUILD_NAME" "$BUILD_NUMBER"
+                            echo "Build info successfully published to JFrog Artifactory."
 
-                        echo "Build info successfully published to JFrog Artifactory."
-                    """
+                            # Copy build info to new location
+                            echo "Copying build info to Artifactory URL: https://trialu79uyt.jfrog.io/artifactory/jfrog_cli/"
+                            $JFROG_CLI_PATH rt upload --server-id=artifactory-server \
+                                "$HOME/.local/bin/*" "jfrog_cli/$buildName/"
+
+                            echo "Build copy successfully uploaded to Artifactory."
+                        """
+                    }
                 }
             }
         }
+
 
         stage ('Terraform Init') {
             steps {
