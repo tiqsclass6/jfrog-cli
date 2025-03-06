@@ -65,11 +65,20 @@ pipeline {
         stage ('Terraform Plan') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
-                                 credentialsId: AWS_CREDENTIALS_ID]]) {
+                                 credentialsId: AWS_CREDENTIALS_ID,
+                                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                     sh """
+                        echo "Configuring AWS CLI..."
+                        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                        aws configure set region us-east-1
+
+                        echo "Validating AWS Credentials..."
+                        aws sts get-caller-identity || exit 1
+
                         echo "Running Terraform Plan..."
                         terraform plan -out=tfplan
-                        echo "Terraform Plan Completed."
                     """
                 }
             }
@@ -79,7 +88,9 @@ pipeline {
             steps {
                 input message: "Approve Terraform Apply?", ok: "Deploy"
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
-                                 credentialsId: AWS_CREDENTIALS_ID]]) {
+                                 credentialsId: AWS_CREDENTIALS_ID,
+                                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                     sh '''
                     echo "Applying Terraform Changes..."
                     terraform apply -auto-approve tfplan
@@ -93,7 +104,9 @@ pipeline {
             steps {
                 input message: "Do you want to destroy the Terraform resources?", ok: "Destroy"
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
-                                 credentialsId: AWS_CREDENTIALS_ID]]) {
+                                 credentialsId: AWS_CREDENTIALS_ID,
+                                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                     sh '''
                     echo "Destroying Terraform Resources..."
                     terraform destroy -auto-approve
