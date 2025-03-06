@@ -30,12 +30,48 @@ pipeline {
             }
         }
 
+        stage('Verify Jenkins Job Exists') {
+            steps {
+                script {
+                    def config = readYaml file: YAML_FILE
+                    def jenkinsJobName = config.pipelines[0].steps[0].configuration.jenkinsJobName
+
+                    // If job is inside a folder, handle it properly
+                    def folderName = '' // Set to your folder name if the job is inside one
+                    if (folderName) {
+                        jenkinsJobName = "${folderName}/${jenkinsJobName}"
+                    }
+
+                    echo "Checking if Jenkins job exists: ${jenkinsJobName}"
+
+                    def jobExists = false
+                    Jenkins.instance.getAllItems(Job.class).each { job ->
+                        if (job.fullName.equals(jenkinsJobName)) {
+                            jobExists = true
+                        }
+                    }
+
+                    if (!jobExists) {
+                        error "Jenkins job '${jenkinsJobName}' not found. Check job name and folder."
+                    } else {
+                        echo "Jenkins job '${jenkinsJobName}' exists and is ready to be triggered."
+                    }
+                }
+            }
+        }
+
         stage('Run Jenkins Step') {
             steps {
                 script {
                     def config = readYaml file: YAML_FILE
                     def jenkinsJobName = config.pipelines[0].steps[0].configuration.jenkinsJobName
                     def timeout = config.pipelines[0].steps[0].configuration.timeoutSeconds
+
+                    // If job is inside a folder, adjust the name
+                    def folderName = '' // Update this if job is in a folder
+                    if (folderName) {
+                        jenkinsJobName = "${folderName}/${jenkinsJobName}"
+                    }
 
                     echo "Triggering Jenkins job: ${jenkinsJobName} with timeout of ${timeout} seconds"
 
@@ -44,6 +80,17 @@ pipeline {
                     ]
                 }
             }
+        }
+    }
+
+    post {
+        failure {
+            script {
+                echo "Pipeline execution failed! Check logs for details."
+            }
+        }
+        always {
+            echo 'Pipeline execution completed.'
         }
     }
 }
