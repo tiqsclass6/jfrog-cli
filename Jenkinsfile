@@ -28,15 +28,15 @@ pipeline {
 
         stage('Set AWS Credentials') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
-                                 credentialsId: AWS_CREDENTIALS_ID,
-                                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jfrog-jenkins', // Ensure this is an AWS credential
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                     sh '''
-                    echo "Configuring AWS CLI..."
-                    aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                    aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                    aws configure set region us-east-1
+                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
                     aws sts get-caller-identity
                     '''
                 }
@@ -71,35 +71,35 @@ pipeline {
 
         stage ('Terraform Init') {
             steps {
-                sh "terraform init -upgrade"
+                sh 'terraform init'
             }
         }
 
         stage ('Terraform Format') {
             steps {
-                sh "terraform fmt -recursive"
+                sh 'terraform fmt -recursive'
             }
         }
 
         stage ('Terraform Validate') {
             steps {
-                sh "terraform validate"
+                sh 'terraform validate'
             }
         }
 
         stage ('Terraform Plan') {
             steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
-                                 credentialsId: AWS_CREDENTIALS_ID,
-                                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                    sh """
-                        echo "Validating AWS Credentials..."
-                        aws sts get-caller-identity || exit 1
-
-                        echo "Running Terraform Plan..."
-                        terraform plan -out=tfplan
-                    """
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jfrog-jenkins',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh '''
+                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                    terraform plan -out=tfplan
+                    '''
                 }
             }
         }
@@ -107,30 +107,16 @@ pipeline {
         stage ('Apply Terraform') {
             steps {
                 input message: "Approve Terraform Apply?", ok: "Deploy"
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
-                                 credentialsId: AWS_CREDENTIALS_ID,
-                                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jfrog-jenkins',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                     sh '''
-                    echo "Applying Terraform Changes..."
+                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
                     terraform apply -auto-approve tfplan
-                    echo "Terraform Apply Completed."
-                    '''
-                }
-            }
-        }
-
-        stage ('Destroy Terraform') {
-            steps {
-                input message: "Do you want to destroy the Terraform resources?", ok: "Destroy"
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
-                                 credentialsId: AWS_CREDENTIALS_ID,
-                                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-                    sh '''
-                    echo "Destroying Terraform Resources..."
-                    terraform destroy -auto-approve
-                    echo "Terraform Destroy Completed."
                     '''
                 }
             }
@@ -139,6 +125,24 @@ pipeline {
         stage ('Deploy Application') {
             steps {
                 echo 'Deploying application...'
+            }
+        }
+        
+        stage ('Destroy Terraform') {
+            steps {
+                input message: "Do you want to destroy the Terraform resources?", ok: "Destroy"
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'jfrog-jenkins',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
+                    sh '''
+                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
+                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
+                    terraform destroy -auto-approve
+                    '''
+                }
             }
         }
 
