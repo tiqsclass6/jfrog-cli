@@ -12,9 +12,34 @@ pipeline {
 
     stages {
 
-        stage ('Clone Repository') {
+        stage('Checkout Code') {
             steps {
-                git branch: 'main', credentialsId: 'github-cred', url: "https://github.com/tiqsclass6/jfrog-cli"
+                script {
+                    echo "Checking out source code from GitHub..."
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: '*/main']],
+                        userRemoteConfigs: [[url: 'https://github.com/tiqsclass6/jfrog-cli']]
+                    ])
+                    echo "Code checkout successful."
+                    sh 'ls -la'
+                }
+            }
+        }
+
+        stage('Set AWS Credentials') {
+            steps {
+                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                                 credentialsId: AWS_CREDENTIALS_ID,
+                                 accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
+                    sh '''
+                    echo "Configuring AWS CLI..."
+                    aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+                    aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+                    aws configure set region us-east-1
+                    aws sts get-caller-identity
+                    '''
+                }
             }
         }
 
@@ -52,7 +77,7 @@ pipeline {
 
         stage ('Terraform Format') {
             steps {
-                sh "terraform fmt -check"
+                sh "terraform fmt -recursive"
             }
         }
 
@@ -69,11 +94,6 @@ pipeline {
                                  accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                                  secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
                     sh """
-                        echo "Configuring AWS CLI..."
-                        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-                        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-                        aws configure set region us-east-1
-
                         echo "Validating AWS Credentials..."
                         aws sts get-caller-identity || exit 1
 
@@ -128,8 +148,9 @@ pipeline {
                                         variable: 'JFROG_CLI_TOKEN')]) {
                     sh """
                         echo "Publishing build info to JFrog Artifactory..."
-                        $HOME/.local/bin/jfrog rt build-add-git $JFROG_BUILD_NAME
-                        $HOME/.local/bin/jfrog rt build-publish --server-id=artifactory-server --repo=$JFROG_REPO $JFROG_BUILD_NAME
+                        export PATH=$HOME/.local/bin:$PATH
+                        $JFROG_CLI_PATH rt build-add-git $JFROG_BUILD_NAME
+                        $JFROG_CLI_PATH rt build-publish --server-id=artifactory-server --repo=$JFROG_REPO $JFROG_BUILD_NAME
                         echo "Build info successfully published to JFrog Artifactory."
                     """
                 }
