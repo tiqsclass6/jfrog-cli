@@ -38,9 +38,10 @@ pipeline {
                     sh '''
                     if $HOME/.local/bin/jfrog config show $JENKINS_SERVER_ID > /dev/null 2>&1; then
                         echo "Updating existing JFrog configuration..."
-                        $HOME/.local/bin/jfrog config edit $JENKINS_SERVER_ID \
-                            --artifactory-url=https://trialu79uyt.jfrog.io/artifactory \
-                            --user=$JFROG_USER --password=$JFROG_PASSWORD --interactive=false
+                        $HOME/.local/bin/jfrog config edit $JENKINS_SERVER_ID --interactive=false <<EOF
+                        $JFROG_USER
+                        $JFROG_PASSWORD
+                    EOF
                     else
                         echo "Adding new JFrog configuration..."
                         $HOME/.local/bin/jfrog config add $JENKINS_SERVER_ID \
