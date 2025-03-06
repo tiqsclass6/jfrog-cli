@@ -2,18 +2,30 @@ pipeline {
     agent any
 
     environment {
-        // Define the YAML file path, assuming it's in the root directory of the repository
         YAML_FILE = 'jenkins-jfrog.yaml'
     }
 
     stages {
+        stage('Checkout Code') {
+            steps {
+                script {
+                    echo "Checking out source code from GitHub..."
+                    checkout scm
+                    sh 'ls -la'
+                }
+            }
+        }
+
         stage('Read YAML Configuration') {
             steps {
                 script {
-                    // Reading the YAML file and parsing it
-                    def pipelineConfig = readYaml file: YAML_FILE
-                    echo "Pipeline Name: ${pipelineConfig.pipelines[0].name}"
-                    echo "Step Name: ${pipelineConfig.pipelines[0].steps[0].name}"
+                    if (fileExists(YAML_FILE)) {
+                        def pipelineConfig = readYaml file: YAML_FILE
+                        echo "Pipeline Name: ${pipelineConfig.pipelines[0].name}"
+                        echo "Step Name: ${pipelineConfig.pipelines[0].steps[0].name}"
+                    } else {
+                        error "YAML file not found: ${YAML_FILE}"
+                    }
                 }
             }
         }
@@ -21,18 +33,12 @@ pipeline {
         stage('Run Jenkins Step') {
             steps {
                 script {
-                    // Default values
-                    def jenkinsJobName = 'myJenkinsJob' // Default job name
-                    def timeout = 30 // Default timeout
-
-                    // Accessing the values from YAML config dynamically
                     def config = readYaml file: YAML_FILE
-                    jenkinsJobName = config.pipelines[0].steps[0].configuration.jenkinsJobName
-                    timeout = config.pipelines[0].steps[0].configuration.timeoutSeconds
+                    def jenkinsJobName = config.pipelines[0].steps[0].configuration.jenkinsJobName
+                    def timeout = config.pipelines[0].steps[0].configuration.timeoutSeconds
 
                     echo "Triggering Jenkins job: ${jenkinsJobName} with timeout of ${timeout} seconds"
 
-                    // Trigger Jenkins Job dynamically using the YAML file values
                     build job: jenkinsJobName, wait: true, parameters: [
                         string(name: 'timeoutSeconds', value: "${timeout}")
                     ]
