@@ -1,7 +1,7 @@
-resource "aws_internet_gateway" "ASG01_igw" {
-  vpc_id = aws_vpc.ASG01-vpc.id
+resource "aws_internet_gateway" "Homework-IGW" {
+  vpc_id = aws_vpc.VPC-A-Virginia-Prod.id
   tags = {
-    Name    = "ASG01_igw"
+    Name    = "Homework-IGW"
     Service = "IGW"
   }
 }
