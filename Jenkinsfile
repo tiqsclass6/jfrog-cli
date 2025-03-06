@@ -87,7 +87,7 @@ pipeline {
                             $JFROG_CLI_PATH rt build-add-git "$buildName" "$BUILD_NUMBER"
 
                             # Publish the build info to JFrog CLI repo
-                            $JFROG_CLI_PATH rt build-publish --server-id=artifactory-server --repo=$JFROG_REPO "$buildName" "$BUILD_NUMBER"
+                            $JFROG_CLI_PATH rt build-publish --server-id=artifactory-server $JFROG_REPO "$buildName" "$BUILD_NUMBER"
 
                             echo "Build info successfully published to JFrog Artifactory."
 
