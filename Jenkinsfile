@@ -6,7 +6,7 @@ pipeline {
         JFROG_ADMIN_CREDENTIALS_ID = 'jfrog_cli1'
         AWS_CREDENTIALS_ID = 'jfrog-jenkins'
         JFROG_CLI_PATH = "https://trialu79uyt.jfrog.io/artifactory/jfrog_cli/"
-        JFROG_BUILD_NAME = "jfrog_jenkins_$(date +%d%m%y)"
+        JFROG_BUILD_NAME = "jfrog_jenkins_March2025"
         JFROG_REPO = "jfrog_cli"
     }
 
@@ -78,7 +78,7 @@ pipeline {
                         export PATH=$HOME/.local/bin:$PATH
 
                         # Define build name and number
-                        BUILD_NAME="jfrog_jenkins_$(date +%d%m%y)"
+                        BUILD_NAME="jfrog_jenkins_March2025"
                         BUILD_NUMBER="$BUILD_NUMBER"
 
                         # Ensure build number is not empty
