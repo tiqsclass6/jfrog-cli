@@ -2,6 +2,7 @@ pipeline {
     agent any
 
     environment {
+        AWS_REGION = 'us-east-1'
         JFROG_CLI_CREDENTIALS_ID = 'jfrog_cli'
         JFROG_ADMIN_CREDENTIALS_ID = 'jfrog_cli1'
         AWS_CREDENTIALS_ID = 'jfrog-jenkins'
