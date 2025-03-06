@@ -2,13 +2,12 @@ pipeline {
     agent any
 
     environment {
-        AWS_REGION = 'us-east-1'
         JFROG_CLI_CREDENTIALS_ID = 'jfrog_cli'
         JFROG_ADMIN_CREDENTIALS_ID = 'jfrog_cli1'
-        AWS_CREDENTIALS_ID = 'jfrog-jenkins'
-        JFROG_CLI_PATH = "$HOME/.local/bin/jfrog"
-        JFROG_BUILD_NAME = "05-03-25_Jenkins"  
-        JFROG_REPO = "jfrog_cli"  
+        AWS_REGION = 'us-east-1'
+        JFROG_CLI_PATH = '$HOME/.local/bin/jfrog'
+        JFROG_BUILD_NAME = '05-03-25_Jenkins'  
+        JFROG_REPO = 'jfrog_cli'
     }
 
     stages {
@@ -31,7 +30,7 @@ pipeline {
             steps {
                 withCredentials([[
                     $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'jfrog-jenkins', // Ensure this is an AWS credential
+                    credentialsId: 'jfrog-jenkins',
                     accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
