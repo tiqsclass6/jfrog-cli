@@ -6,6 +6,8 @@ pipeline {
         JFROG_ADMIN_CREDENTIALS_ID = 'jfrog_cli1'
         AWS_CREDENTIALS_ID = 'jfrog-jenkins'
         JFROG_CLI_PATH = "$HOME/.local/bin/jfrog"
+        JFROG_BUILD_NAME = "05-03-25_Jenkins"  // Set the Build Name
+        JFROG_REPO = "jfrog_cli"  // JFrog Repository
     }
 
     stages {
@@ -48,16 +50,26 @@ pipeline {
             }
         }
 
+        stage ('Terraform Format') {
+            steps {
+                sh "terraform fmt -check"
+            }
+        }
+
+        stage ('Terraform Validate') {
+            steps {
+                sh "terraform validate"
+            }
+        }
+
         stage ('Terraform Plan') {
             steps {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
                                  credentialsId: AWS_CREDENTIALS_ID]]) {
                     sh """
-                        echo "Validating AWS Credentials..."
-                        aws configure list
-                        aws configure set default.s3.signature_version s3v4
-                        aws sts get-caller-identity || exit 1
+                        echo "Running Terraform Plan..."
                         terraform plan -out=tfplan
+                        echo "Terraform Plan Completed."
                     """
                 }
             }
@@ -69,10 +81,9 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
                                  credentialsId: AWS_CREDENTIALS_ID]]) {
                     sh '''
-                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                    aws configure set default.s3.signature_version s3v4
+                    echo "Applying Terraform Changes..."
                     terraform apply -auto-approve tfplan
+                    echo "Terraform Apply Completed."
                     '''
                 }
             }
@@ -84,10 +95,9 @@ pipeline {
                 withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
                                  credentialsId: AWS_CREDENTIALS_ID]]) {
                     sh '''
-                    export AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID
-                    export AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY
-                    aws configure set default.s3.signature_version s3v4
+                    echo "Destroying Terraform Resources..."
                     terraform destroy -auto-approve
+                    echo "Terraform Destroy Completed."
                     '''
                 }
             }
@@ -99,11 +109,16 @@ pipeline {
             }
         }
 
-        stage ('Publish Build Info') {
+        stage ('Publish Build Info to JFrog') {
             steps {
                 withCredentials([string(credentialsId: JFROG_CLI_CREDENTIALS_ID, 
                                         variable: 'JFROG_CLI_TOKEN')]) {
-                    sh "$HOME/.local/bin/jfrog rt build-publish artifactory-server"
+                    sh """
+                        echo "Publishing build info to JFrog Artifactory..."
+                        $HOME/.local/bin/jfrog rt build-add-git $JFROG_BUILD_NAME
+                        $HOME/.local/bin/jfrog rt build-publish --server-id=artifactory-server --repo=$JFROG_REPO $JFROG_BUILD_NAME
+                        echo "Build info successfully published to JFrog Artifactory."
+                    """
                 }
             }
         }
