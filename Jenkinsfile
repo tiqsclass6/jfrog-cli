@@ -38,7 +38,8 @@ pipeline {
                     sh '''
                     if $HOME/.local/bin/jfrog config show $JENKINS_SERVER_ID > /dev/null 2>&1; then
                         echo "Updating existing JFrog configuration..."
-                        $HOME/.local/bin/jfrog config edit $JENKINS_SERVER_ID --interactive=false <<EOF
+                        $HOME/.local/bin/jfrog config edit $JENKINS_SERVER_ID --interactive=false 
+                    <<EOF
                     $JFROG_USER
                     $JFROG_PASSWORD
                     EOF
