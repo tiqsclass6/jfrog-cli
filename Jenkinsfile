@@ -6,7 +6,6 @@ pipeline {
         JFROG_CLI_PATH = "$HOME/.local/bin/jfrog"
         JFROG_REPO = "jfrog_cli"
         JFROG_URL = "https://trialu79uyt.jfrog.io/artifactory"
-        TRIVY_VERSION = "0.47.0"
     }
 
     stages {
@@ -32,28 +31,8 @@ pipeline {
         stage('Install Trivy') {
             steps {
                 script {
-                    echo "Installing Trivy security scanner..."
-                    sh '''
-                    set -e
-
-                    if ! command -v trivy &> /dev/null; then
-                        echo "Downloading Trivy v$TRIVY_VERSION..."
-                        wget -O $TRIVY_ARCHIVE https://github.com/aquasecurity/trivy/releases/download/v$TRIVY_VERSION/$TRIVY_ARCHIVE
-
-                        echo "Verifying downloaded file..."
-                        file $TRIVY_ARCHIVE
-                        ls -lh $TRIVY_ARCHIVE
-
-                        echo "Extracting Trivy..."
-                        tar -xzf $TRIVY_ARCHIVE || (echo "Extraction failed. File might be corrupted." && exit 1)
-
-                        chmod +x trivy
-                        sudo mv trivy /usr/local/bin/trivy
-                        rm -f $TRIVY_ARCHIVE
-                    else
-                        echo "Trivy is already installed."
-                    fi
-                    '''
+                    echo "Executing Trivy installation script..."
+                    sh 'chmod +x trivy.sh && ./trivy.sh'
                 }
             }
         }
