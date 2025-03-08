@@ -28,22 +28,13 @@ pipeline {
             }
         }
 
-        stage('Install Trivy') {
-            steps {
-                script {
-                    echo "Executing Trivy installation script..."
-                    sh 'chmod +x trivy.sh && ./trivy.sh'
-                }
-            }
-        }
-
         stage('Security Scan - Trivy') {
             steps {
                 script {
-                    echo "Scanning repository for vulnerabilities..."
+                    echo "Scanning repository for vulnerabilities using pre-installed Trivy..."
                     sh '''
                     export PATH=/usr/local/bin:$PATH
-                    trivy --version
+                    trivy --version  # Confirm Trivy is installed
                     trivy repo $GITHUB_REPO --exit-code 1 || echo "Vulnerabilities found!"
                     '''
                 }
