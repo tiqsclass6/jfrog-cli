@@ -33,32 +33,18 @@ pipeline {
         stage('Verify Jenkins Job Exists') {
             steps {
                 script {
-                    def config = readYaml file: YAML_FILE
-                    def jenkinsJobName = config.pipelines[0].steps[0].configuration.jenkinsJobName
-
-                    // If job is inside a folder, handle it properly
-                    def folderName = '' // Set to your folder name if the job is inside one
-                    if (folderName) {
-                        jenkinsJobName = "${folderName}/${jenkinsJobName}"
-                    }
-
-                    echo "Checking if Jenkins job exists: ${jenkinsJobName}"
-
-                    def jobExists = false
-                    Jenkins.instance.getAllItems(Job.class).each { job ->
-                        if (job.fullName.equals(jenkinsJobName)) {
-                            jobExists = true
-                        }
-                    }
-
-                    if (!jobExists) {
-                        error "Jenkins job '${jenkinsJobName}' not found. Check job name and folder."
+                    def jenkinsJobName = "myJenkinsJob"
+                    
+                    def job = jenkins.model.Jenkins.instance.getItemByFullName(jenkinsJobName)
+                    if (job == null) {
+                        error "Jenkins job '${jenkinsJobName}' not found."
                     } else {
-                        echo "Jenkins job '${jenkinsJobName}' exists and is ready to be triggered."
+                        echo "Jenkins job '${jenkinsJobName}' exists."
                     }
                 }
             }
         }
+
 
         stage('Run Jenkins Step') {
             steps {
