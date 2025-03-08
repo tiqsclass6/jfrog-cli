@@ -50,7 +50,7 @@ pipeline {
                                 $HOME/.local/bin/jfrog --version
 
                                 echo "Configuring JFrog CLI authentication..."
-                                $HOME/.local/bin/jfrog config add artifactory-server4 \
+                                $HOME/.local/bin/jfrog config add artifactory-server1 \
                                     --url=$JFROG_URL \
                                     --user=$JFROG_USER \
                                     --apikey=$JFROG_API_KEY \
@@ -82,7 +82,7 @@ pipeline {
 
                         # Collect and publish build info with --url
                         $HOME/.local/bin/jfrog rt build-add-git "$JFROG_BUILD_NAME" "$BUILD_NUMBER" --url=$JFROG_URL
-                        $HOME/.local/bin/jfrog rt build-publish --url=$JFROG_URL --server-id=artifactory-server4 "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
+                        $HOME/.local/bin/jfrog rt build-publish --url=$JFROG_URL --server-id=artifactory-server1 "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
 
                         echo "Build successfully published to JFrog Artifactory."
                         '''
