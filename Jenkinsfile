@@ -89,7 +89,7 @@ pipeline {
 
                         # Collect and publish build info
                         $HOME/.local/bin/jfrog rt build-add-git "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
-                        $HOME/.local/bin/jfrog rt build-publish --url=$JFROG_URL --server-id=artifactory-server "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
+                        $HOME/.local/bin/jfrog rt build-publish --url=$JFROG_URL --server-id=artifactory-server1 "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
 
                         echo "Build successfully published to JFrog Artifactory."
                         '''
