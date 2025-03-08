@@ -4,12 +4,21 @@ pipeline {
     environment {
         GITHUB_REPO = "https://github.com/tiqsclass6/jfrog-cli"
         JFROG_CLI_PATH = "$HOME/.local/bin/jfrog"
-        JFROG_BUILD_NAME = "jfrog_jenkins_" + new Date().format('ddMMyy')  // Build name with date
-        JFROG_REPO = "jfrog_cli"  // JFrog repository name
-        SCAN_TOOL = "trivy" // Trivy for security scanning
+        JFROG_REPO = "jfrog_cli"
+        JFROG_URL = "https://trialu79uyt.jfrog.io/artifactory"
+        TRIVY_VERSION = "0.47.0"
     }
 
     stages {
+        stage('Initialize Build Variables') {
+            steps {
+                script {
+                    echo "Executing initialization script..."
+                    sh 'chmod +x initialize.sh && ./initialize.sh'
+                }
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 script {
@@ -20,49 +29,97 @@ pipeline {
             }
         }
 
-        stage('Security Scan - Trivy') {
+        stage('Install Trivy') {
             steps {
                 script {
-                    echo "Scanning repository for vulnerabilities..."
+                    echo "Installing Trivy security scanner..."
                     sh '''
-                    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
-                    $SCAN_TOOL repo $GITHUB_REPO --exit-code 1 || echo "Vulnerabilities found!"
+                    set -e
+
+                    if ! command -v trivy &> /dev/null; then
+                        echo "Downloading Trivy v$TRIVY_VERSION..."
+                        wget -O $TRIVY_ARCHIVE https://github.com/aquasecurity/trivy/releases/download/v$TRIVY_VERSION/$TRIVY_ARCHIVE
+
+                        echo "Verifying downloaded file..."
+                        file $TRIVY_ARCHIVE
+                        ls -lh $TRIVY_ARCHIVE
+
+                        echo "Extracting Trivy..."
+                        tar -xzf $TRIVY_ARCHIVE || (echo "Extraction failed. File might be corrupted." && exit 1)
+
+                        chmod +x trivy
+                        sudo mv trivy /usr/local/bin/trivy
+                        rm -f $TRIVY_ARCHIVE
+                    else
+                        echo "Trivy is already installed."
+                    fi
                     '''
                 }
             }
         }
 
-        stage('Install JFrog CLI') {
+        stage('Security Scan - Trivy') {
             steps {
                 script {
-                    echo "Installing JFrog CLI..."
+                    echo "Scanning repository for vulnerabilities..."
                     sh '''
-                    curl -fL https://getcli.jfrog.io | sh
-                    mkdir -p $HOME/.local/bin
-                    mv jfrog $JFROG_CLI_PATH
-                    chmod +x $JFROG_CLI_PATH
-                    export PATH=$HOME/.local/bin:$PATH
-                    $JFROG_CLI_PATH --version
+                    export PATH=/usr/local/bin:$PATH
+                    trivy --version
+                    trivy repo $GITHUB_REPO --exit-code 1 || echo "Vulnerabilities found!"
                     '''
+                }
+            }
+        }
+
+        stage('Install JFrog CLI & Authenticate') {
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'jfrog-cli1', 
+                                     usernameVariable: 'JFROG_USER', 
+                                     passwordVariable: 'JFROG_PASSWORD')
+                ]) {
+                    script {
+                        echo "Installing JFrog CLI..."
+                        sh '''
+                        curl -fL https://getcli.jfrog.io | sh
+                        mkdir -p $HOME/.local/bin
+                        mv jfrog $HOME/.local/bin/jfrog
+                        chmod +x $HOME/.local/bin/jfrog
+                        export PATH=$HOME/.local/bin:$PATH
+                        $HOME/.local/bin/jfrog --version
+
+                        echo "Configuring JFrog CLI authentication..."
+                        $HOME/.local/bin/jfrog config add artifactory-server \
+                            --artifactory-url=$JFROG_URL \
+                            --user=$JFROG_USER \
+                            --password=$JFROG_PASSWORD \
+                            --interactive=false
+                        '''
+                    }
                 }
             }
         }
 
         stage('Publish Build to JFrog Artifactory') {
             steps {
-                withCredentials([string(credentialsId: 'jfrog_cli', variable: 'JFROG_CLI_TOKEN')]) {
+                withCredentials([
+                    string(credentialsId: 'jfrog_cli', variable: 'JFROG_CLI_TOKEN')
+                ]) {
                     script {
                         echo "Publishing build to JFrog Artifactory..."
                         sh '''
                         export PATH=$HOME/.local/bin:$PATH
-                        BUILD_NUMBER="${BUILD_NUMBER:-1}"  # Ensure build number exists
+                        BUILD_NUMBER="${BUILD_NUMBER:-1}"
 
                         echo "Build Name: $JFROG_BUILD_NAME"
                         echo "Build Number: $BUILD_NUMBER"
 
+                        # Ensure authentication
+                        $HOME/.local/bin/jfrog rt ping || exit 1
+
                         # Collect and publish build info
-                        $JFROG_CLI_PATH rt build-add-git "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
-                        $JFROG_CLI_PATH rt build-publish --server-id=artifactory-server "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
+                        $HOME/.local/bin/jfrog rt build-add-git "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
+                        $HOME/.local/bin/jfrog rt build-publish --url=$JFROG_URL --server-id=artifactory-server "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
 
                         echo "Build successfully published to JFrog Artifactory."
                         '''
