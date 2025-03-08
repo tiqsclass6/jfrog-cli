@@ -2,59 +2,74 @@ pipeline {
     agent any
 
     environment {
-        YAML_FILE = 'jenkins-jfrog.yaml'
+        GITHUB_REPO = "https://github.com/tiqsclass6/jfrog-cli"
+        JFROG_CLI_PATH = "$HOME/.local/bin/jfrog"
+        JFROG_BUILD_NAME = "jfrog_jenkins_" + new Date().format('ddMMyy')  // Build name with date
+        JFROG_REPO = "jfrog_cli"  // JFrog repository name
+        SCAN_TOOL = "trivy" // Trivy for security scanning
     }
 
     stages {
         stage('Checkout Code') {
             steps {
                 script {
-                    echo "Checking out source code from GitHub..."
-                    checkout scm
+                    echo "Cloning GitHub repository..."
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[url: GITHUB_REPO]]])
                     sh 'ls -la'
                 }
             }
         }
 
-        stage('Read YAML Configuration') {
+        stage('Security Scan - Trivy') {
             steps {
                 script {
-                    if (fileExists(YAML_FILE)) {
-                        def pipelineConfig = readYaml file: YAML_FILE
-                        echo "Pipeline Name: ${pipelineConfig.pipelines[0].name}"
-                        echo "Step Name: ${pipelineConfig.pipelines[0].steps[0].name}"
-                    } else {
-                        error "YAML file not found: ${YAML_FILE}"
+                    echo "Scanning repository for vulnerabilities..."
+                    sh '''
+                    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh
+                    $SCAN_TOOL repo $GITHUB_REPO --exit-code 1 || echo "Vulnerabilities found!"
+                    '''
+                }
+            }
+        }
+
+        stage('Install JFrog CLI') {
+            steps {
+                script {
+                    echo "Installing JFrog CLI..."
+                    sh '''
+                    curl -fL https://getcli.jfrog.io | sh
+                    mkdir -p $HOME/.local/bin
+                    mv jfrog $JFROG_CLI_PATH
+                    chmod +x $JFROG_CLI_PATH
+                    export PATH=$HOME/.local/bin:$PATH
+                    $JFROG_CLI_PATH --version
+                    '''
+                }
+            }
+        }
+
+        stage('Publish Build to JFrog Artifactory') {
+            steps {
+                withCredentials([string(credentialsId: 'jfrog_cli', variable: 'JFROG_CLI_TOKEN')]) {
+                    script {
+                        echo "Publishing build to JFrog Artifactory..."
+                        sh '''
+                        export PATH=$HOME/.local/bin:$PATH
+                        BUILD_NUMBER="${BUILD_NUMBER:-1}"  # Ensure build number exists
+
+                        echo "Build Name: $JFROG_BUILD_NAME"
+                        echo "Build Number: $BUILD_NUMBER"
+
+                        # Collect and publish build info
+                        $JFROG_CLI_PATH rt build-add-git "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
+                        $JFROG_CLI_PATH rt build-publish --server-id=artifactory-server "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
+
+                        echo "Build successfully published to JFrog Artifactory."
+                        '''
                     }
                 }
             }
         }
-
-        stage('Verify Jenkins Job Exists') {
-            steps {
-                script {
-                    def jenkinsJobName = "myJenkinsJob"
-                    
-                    def job = jenkins.model.Jenkins.instance.getItemByFullName(jenkinsJobName)
-                    if (job == null) {
-                        error "Jenkins job '${jenkinsJobName}' not found."
-                    } else {
-                        echo "Jenkins job '${jenkinsJobName}' exists."
-                    }
-                }
-            }
-        }
-
-
-        stage('Run Jenkins Step') {
-            steps {
-                script {
-                    def jenkinsJobName = "myJenkinsJob"
-                    build job: jenkinsJobName, wait: true
-                }
-            }
-        }
-
     }
 
     post {
