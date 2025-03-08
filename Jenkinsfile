@@ -9,15 +9,6 @@ pipeline {
     }
 
     stages {
-        stage('Initialize Build Variables') {
-            steps {
-                script {
-                    echo "Executing initialization script..."
-                    sh 'chmod +x initialize.sh && ./initialize.sh'
-                }
-            }
-        }
-
         stage('Checkout Code') {
             steps {
                 script {
@@ -59,8 +50,8 @@ pipeline {
                         $HOME/.local/bin/jfrog --version
 
                         echo "Configuring JFrog CLI authentication..."
-                        $HOME/.local/bin/jfrog config add artifactory-server1 \
-                            --artifactory-url=$JFROG_URL \
+                        $HOME/.local/bin/jfrog config add artifactory-server2 \
+                            --url=$JFROG_URL \
                             --user=$JFROG_USER \
                             --password=$JFROG_PASSWORD \
                             --interactive=false
@@ -84,12 +75,12 @@ pipeline {
                         echo "Build Name: $JFROG_BUILD_NAME"
                         echo "Build Number: $BUILD_NUMBER"
 
-                        # Ensure authentication
-                        $HOME/.local/bin/jfrog rt ping || exit 1
+                        # Ensure authentication works with explicit --url
+                        $HOME/.local/bin/jfrog rt ping --url=$JFROG_URL || exit 1
 
-                        # Collect and publish build info
-                        $HOME/.local/bin/jfrog rt build-add-git "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
-                        $HOME/.local/bin/jfrog rt build-publish --url=$JFROG_URL --server-id=artifactory-server1 "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
+                        # Collect and publish build info with --url
+                        $HOME/.local/bin/jfrog rt build-add-git "$JFROG_BUILD_NAME" "$BUILD_NUMBER" --url=$JFROG_URL
+                        $HOME/.local/bin/jfrog rt build-publish --url=$JFROG_URL --server-id=artifactory-server2 "$JFROG_BUILD_NAME" "$BUILD_NUMBER"
 
                         echo "Build successfully published to JFrog Artifactory."
                         '''
