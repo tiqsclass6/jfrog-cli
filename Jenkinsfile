@@ -49,24 +49,12 @@ pipeline {
         stage('Run Jenkins Step') {
             steps {
                 script {
-                    def config = readYaml file: YAML_FILE
-                    def jenkinsJobName = config.pipelines[0].steps[0].configuration.jenkinsJobName
-                    def timeout = config.pipelines[0].steps[0].configuration.timeoutSeconds
-
-                    // If job is inside a folder, adjust the name
-                    def folderName = '' // Update this if job is in a folder
-                    if (folderName) {
-                        jenkinsJobName = "${folderName}/${jenkinsJobName}"
-                    }
-
-                    echo "Triggering Jenkins job: ${jenkinsJobName} with timeout of ${timeout} seconds"
-
-                    build job: jenkinsJobName, wait: true, parameters: [
-                        string(name: 'timeoutSeconds', value: "${timeout}")
-                    ]
+                    def jenkinsJobName = "myJenkinsJob"
+                    build job: jenkinsJobName, wait: true
                 }
             }
         }
+
     }
 
     post {
