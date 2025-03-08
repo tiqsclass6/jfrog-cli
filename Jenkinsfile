@@ -59,7 +59,7 @@ pipeline {
                         $HOME/.local/bin/jfrog --version
 
                         echo "Configuring JFrog CLI authentication..."
-                        $HOME/.local/bin/jfrog config add artifactory-server \
+                        $HOME/.local/bin/jfrog config add artifactory-server1 \
                             --artifactory-url=$JFROG_URL \
                             --user=$JFROG_USER \
                             --password=$JFROG_PASSWORD \
