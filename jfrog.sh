@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Ensure JFROG_SERVER_ID is set
-JFROG_SERVER_ID="artifactory-server5"
+JFROG_SERVER_ID="artifactory-server6"
 
 # Ensure JFrog CLI is installed in the expected path
 JFROG_CLI_PATH="$HOME/.local/bin/jfrog"
