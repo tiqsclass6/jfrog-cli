@@ -32,34 +32,36 @@ pipeline {
             }
         }
 
-        stage('Install JFrog CLI & Authenticate') {
-            steps {
-                withCredentials([
-                    usernamePassword(credentialsId: 'jfrog-cli1', 
-                                     usernameVariable: 'JFROG_USER', 
-                                     passwordVariable: 'JFROG_PASSWORD')
-                ]) {
-                    script {
-                        echo "Installing JFrog CLI..."
-                        sh '''
-                        curl -fL https://getcli.jfrog.io | sh
-                        mkdir -p $HOME/.local/bin
-                        mv jfrog $HOME/.local/bin/jfrog
-                        chmod +x $HOME/.local/bin/jfrog
-                        export PATH=$HOME/.local/bin:$PATH
-                        $HOME/.local/bin/jfrog --version
+                stage('Install JFrog CLI & Authenticate') {
+                    steps {
+                        withCredentials([
+                            usernamePassword(credentialsId: 'jfrog-cli1', 
+                                            usernameVariable: 'JFROG_USER', 
+                                            passwordVariable: 'JFROG_API_KEY')
+                        ]) {
+                            script {
+                                echo "Installing JFrog CLI..."
+                                sh '''
+                                curl -fL https://getcli.jfrog.io | sh
+                                mkdir -p $HOME/.local/bin
+                                mv jfrog $HOME/.local/bin/jfrog
+                                chmod +x $HOME/.local/bin/jfrog
+                                export PATH=$HOME/.local/bin:$PATH
+                                $HOME/.local/bin/jfrog --version
 
-                        echo "Configuring JFrog CLI authentication..."
-                        $HOME/.local/bin/jfrog config add artifactory-server2 \
-                            --url=$JFROG_URL \
-                            --user=$JFROG_USER \
-                            --password=$JFROG_PASSWORD \
-                            --interactive=false
-                        '''
+                                echo "Configuring JFrog CLI authentication..."
+                                $HOME/.local/bin/jfrog config add artifactory-server \
+                                    --url=$JFROG_URL \
+                                    --user=$JFROG_USER \
+                                    --apikey=$JFROG_API_KEY \
+                                    --basic-auth-only=true \
+                                    --interactive=false
+                                '''
+                            }
+                        }
                     }
                 }
-            }
-        }
+
 
         stage('Publish Build to JFrog Artifactory') {
             steps {
